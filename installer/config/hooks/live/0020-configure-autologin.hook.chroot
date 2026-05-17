@@ -1,0 +1,62 @@
+#!/bin/bash
+# Hook: Configure autologin to TTY1 for the live user, then launch the installer wizard.
+
+set -euo pipefail
+
+echo "[HermitOS] Configuring autologin and wizard launcher..."
+
+# Create hermit-installer user for the live session
+useradd -m -s /bin/bash hermit-installer 2>/dev/null || true
+echo "hermit-installer ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/hermit-installer
+chmod 440 /etc/sudoers.d/hermit-installer
+
+# Create systemd override for getty@tty1 to autologin
+mkdir -p /etc/systemd/system/getty@tty1.service.d/
+cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'EOF'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin hermit-installer --noclear %I $TERM
+Type=idle
+EOF
+
+# Create .profile that launches the wizard (with recovery fallback)
+cat > /home/hermit-installer/.profile << 'PROFILE'
+# HermitOS live session profile
+# Only launch wizard on tty1 to avoid loops
+if [ "$(tty)" = "/dev/tty1" ]; then
+    # Clear screen, show welcome banner briefly
+    clear
+    echo ""
+    echo "  ██╗  ██╗███████╗██████╗ ███╗   ███╗██╗████████╗ ██████╗ ███████╗"
+    echo "  ██║  ██║██╔════╝██╔══██╗████╗ ████║██║╚══██╔══╝██╔═══██╗██╔════╝"
+    echo "  ███████║█████╗  ██████╔╝██╔████╔██║██║   ██║   ██║   ██║███████╗"
+    echo "  ██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║   ██║   ██║╚════██║"
+    echo "  ██║  ██║███████╗██║  ██║██║ ╚═╝ ██║██║   ██║   ╚██████╔╝███████║"
+    echo "  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝   ╚═╝    ╚═════╝ ╚══════╝"
+    echo ""
+    echo "                    I N S T A L L E R"
+    echo ""
+    sleep 1
+
+    # Launch installer wizard
+    cd /opt/hermit-installer
+    if sudo python3 /opt/hermit-installer/wizard/main.py; then
+        echo ""
+        echo "Installer finished. You may now reboot."
+    else
+        echo ""
+        echo "==================================================================="
+        echo "  INSTALLER EXITED (code $?)"
+        echo "  You are now in a recovery shell."
+        echo "  Re-run: sudo python3 /opt/hermit-installer/wizard/main.py"
+        echo "==================================================================="
+    fi
+fi
+PROFILE
+
+chown hermit-installer:hermit-installer /home/hermit-installer/.profile
+
+# Enable the getty service with autologin
+systemctl enable getty@tty1.service || true
+
+echo "[HermitOS] Autologin configured for hermit-installer on tty1"

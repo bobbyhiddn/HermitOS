@@ -1,0 +1,6 @@
+# Packages for the live environment only (not installed to target)
+live-boot
+live-boot-initramfs-tools
+live-config
+live-config-systemd
+systemd-sysv

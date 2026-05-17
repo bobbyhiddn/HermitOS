@@ -1,0 +1,27 @@
+# live-build build artifacts
+binary/
+cache/
+chroot/
+*.iso
+*.img
+*.raw
+*.qcow2
+
+# live-build state
+.build/
+config/binary
+config/chroot
+config/source
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Editor
+.DS_Store
+*.swp
+*.swo
+.idea/

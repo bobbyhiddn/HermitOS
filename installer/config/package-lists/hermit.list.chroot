@@ -1,0 +1,88 @@
+# HermitOS Live Installer - Package List
+# Base system & hardware support
+linux-image-amd64
+firmware-linux
+firmware-linux-nonfree
+firmware-misc-nonfree
+firmware-iwlwifi
+firmware-atheros
+firmware-realtek
+firmware-brcm80211
+firmware-amd-graphics
+intel-microcode
+amd64-microcode
+
+# Storage & hardware detection
+nvme-cli
+smartmontools
+lshw
+pciutils
+usbutils
+dmidecode
+hdparm
+
+# Partitioning tools
+parted
+gdisk
+fdisk
+e2fsprogs
+dosfstools
+ntfs-3g
+
+# Installation tools
+debootstrap
+arch-install-scripts
+
+# Network
+network-manager
+network-manager-gnome
+wpasupplicant
+wireless-tools
+iw
+net-tools
+iputils-ping
+curl
+wget
+ca-certificates
+
+# Python stack (for wizard)
+python3
+python3-pip
+python3-venv
+pipx
+
+# Terminal & shell
+bash
+tmux
+vim
+less
+file
+rsync
+tar
+gzip
+xz-utils
+
+# System utilities
+sudo
+systemd
+udev
+dbus
+htop
+lsof
+strace
+gawk
+sed
+grep
+
+# GRUB bootloader tools
+grub-efi-amd64
+grub-pc-bin
+grub-common
+efibootmgr
+os-prober
+
+# Chroot tools for installation
+mount
+util-linux
+procps
+psmisc

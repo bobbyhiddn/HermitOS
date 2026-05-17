@@ -1,0 +1,35 @@
+#!/bin/sh
+# HermitOS live-build auto/config
+# This script configures live-build for a Debian 13 (trixie) live installer image.
+
+set -e
+
+lb config noauto \
+    --architectures amd64 \
+    --distribution trixie \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --apt-recommends false \
+    --apt-indices false \
+    --binary-images iso-hybrid \
+    --bootloaders "syslinux,grub-efi" \
+    --linux-flavours amd64 \
+    --linux-packages "linux-image linux-headers" \
+    --memtest none \
+    --win32-loader false \
+    --image-name "hermitos-installer" \
+    --iso-volume "HermitOS Installer" \
+    --iso-application "HermitOS Installer" \
+    --iso-publisher "HermitOS Project" \
+    --firmware-binary true \
+    --firmware-chroot true \
+    --backports false \
+    --security true \
+    --updates true \
+    --mirror-bootstrap "http://deb.debian.org/debian" \
+    --mirror-chroot "http://deb.debian.org/debian" \
+    --mirror-binary "http://deb.debian.org/debian" \
+    --mirror-binary-security "http://security.debian.org/debian-security" \
+    --debootstrap-options "--include=apt-transport-https,ca-certificates" \
+    --chroot-filesystem squashfs \
+    --compression gzip \
+    "${@}"

@@ -1,0 +1,21 @@
+#!/bin/bash
+# Hook: Enable NetworkManager in the live system
+
+set -euo pipefail
+
+echo "[HermitOS] Enabling NetworkManager..."
+
+# Enable NetworkManager
+systemctl enable NetworkManager || true
+
+# Disable wpa_supplicant standalone (NM manages it)
+systemctl disable wpa_supplicant 2>/dev/null || true
+
+# Remove any conflicting /etc/network/interfaces entries
+cat > /etc/network/interfaces << 'EOF'
+# Managed by NetworkManager
+auto lo
+iface lo inet loopback
+EOF
+
+echo "[HermitOS] NetworkManager enabled"

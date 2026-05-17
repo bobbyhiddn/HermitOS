@@ -1,0 +1,16 @@
+#!/bin/bash
+# Hook: Install Python wizard dependencies (textual, rich) into the live image.
+# Runs inside the chroot during image build.
+
+set -euo pipefail
+
+echo "[HermitOS] Installing Python wizard dependencies..."
+
+# Install pip3 if not present
+apt-get install -y python3-pip --no-install-recommends 2>/dev/null || true
+
+# Install textual and rich into the system Python
+# We use --break-system-packages here because this IS the system we're building
+pip3 install --no-cache-dir --break-system-packages textual rich 2>&1
+
+echo "[HermitOS] Wizard deps installed OK"
