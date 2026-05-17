@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=HermitOS
+Description=HermitOS boot splash — brown woodcut hermit figure on dark background
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/hermitos
+ScriptFile=/usr/share/plymouth/themes/hermitos/hermitos.script

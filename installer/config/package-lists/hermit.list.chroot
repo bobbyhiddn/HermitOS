@@ -86,3 +86,8 @@ mount
 util-linux
 procps
 psmisc
+
+# Plymouth boot splash
+plymouth
+plymouth-themes
+libplymouth5

@@ -1,0 +1,33 @@
+#!/bin/bash
+# Hook: Set HermitOS as the default Plymouth boot theme and rebuild initramfs.
+# Runs inside the chroot during image build.
+
+set -euo pipefail
+
+echo "[HermitOS] Configuring Plymouth theme..."
+
+# Verify the theme directory exists
+THEME_DIR="/usr/share/plymouth/themes/hermitos"
+if [ ! -d "$THEME_DIR" ]; then
+    echo "[HermitOS] ERROR: Plymouth theme directory not found: $THEME_DIR"
+    exit 1
+fi
+
+# Check required theme files
+for f in hermitos.plymouth hermitos.script background.png; do
+    if [ ! -f "$THEME_DIR/$f" ]; then
+        echo "[HermitOS] ERROR: Missing Plymouth theme file: $THEME_DIR/$f"
+        exit 1
+    fi
+done
+
+# Set hermitos as the default Plymouth theme
+plymouth-set-default-theme hermitos
+echo "[HermitOS] Plymouth theme set to: hermitos"
+
+# Rebuild initramfs to embed the new theme
+echo "[HermitOS] Rebuilding initramfs (this takes a moment)..."
+update-initramfs -u
+echo "[HermitOS] initramfs rebuilt OK"
+
+echo "[HermitOS] Plymouth theme configuration complete."
