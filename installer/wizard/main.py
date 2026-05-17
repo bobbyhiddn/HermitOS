@@ -4,19 +4,20 @@ HermitOS Installer Wizard
 A terminal UI installer that guides users through setting up HermitOS.
 Built with Textual. Must run as root.
 
-11-Step Installation Flow:
-  1. Welcome
-  2. Language & Locale
-  3. Timezone
-  4. Network
-  5. Name Your Prime (agent identity)
-  6. Drive Selection
-  7. Partitioning
-  8. User Account
-  9. Base System Install (debootstrap)
+12-Step Installation Flow:
+  1.  Welcome
+  2.  Language & Locale
+  3.  Timezone
+  4.  Network
+  5.  Name Your Prime (agent identity)
+  6.  Drive Selection
+  7.  Partitioning
+  8.  User Account
+  9.  Base System Install (debootstrap)
   10. HermitOS Stack (Hyprland, Incus, K3s, Hermetic, Ollama)
-  11. Bootloader (GRUB EFI)
-  (+) Nvidia Detection (auto, between 11 and Complete)
+  11. Shore Registration (prime tile in Shore dashboard)
+  12. Bootloader (GRUB EFI)
+  (+) Nvidia Detection (auto, after bootloader)
   (+) Complete
 """
 
@@ -42,6 +43,7 @@ from screens.partition import PartitionScreen
 from screens.user_account import UserAccountScreen
 from screens.base_install import BaseInstallScreen
 from screens.hermitos_stack import HermitOSStackScreen
+from screens.shore_register import ShoreRegisterScreen
 from screens.bootloader import BootloaderScreen
 from screens.nvidia import NvidiaScreen
 from screens.complete import CompleteScreen
@@ -58,6 +60,7 @@ SCREEN_REGISTRY = {
     "user_account":   UserAccountScreen,
     "base_install":   BaseInstallScreen,
     "hermitos_stack": HermitOSStackScreen,
+    "shore_register": ShoreRegisterScreen,
     "bootloader":     BootloaderScreen,
     "nvidia":         NvidiaScreen,
     "complete":       CompleteScreen,
@@ -292,6 +295,9 @@ class HermitInstaller(App):
             "install_hermetic": True,
             "install_ollama": False,
             "install_nvidia": False,
+            # Shore registration
+            "prime_port": 7777,
+            "shore_url": "http://localhost:7778",
             # Progress flags
             "debootstrap_done": False,
             "stack_done": False,

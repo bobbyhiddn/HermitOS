@@ -103,23 +103,65 @@ incus restart testvm
 incus console testvm
 ```
 
-## Wizard Flow (11 steps + optional)
+## Wizard Flow (12 steps + optional)
 
 | Step | Screen | Description |
 |------|--------|-------------|
-| 1 | Welcome | Overview, hardware requirements |
-| 2 | Language | Locale + keyboard layout |
-| 3 | Timezone | System timezone |
-| 4 | Network | Ethernet auto / WiFi scan+connect |
-| 5 | Prime Name | Name your Hermetic Prime agent |
-| 6 | Drive | Select target drive (all NVMe/SATA shown) |
-| 7 | Partition | EFI+root, or +home, or +swap |
-| 8 | User Account | Hostname, username, password |
-| 9 | Base Install | `debootstrap` + kernel + firmware |
+| 1  | Welcome | Overview, hardware requirements |
+| 2  | Language | Locale + keyboard layout |
+| 3  | Timezone | System timezone |
+| 4  | Network | Ethernet auto / WiFi scan+connect |
+| 5  | Prime Name | Name your Hermetic Prime agent |
+| 6  | Drive | Select target drive (all NVMe/SATA shown) |
+| 7  | Partition | EFI+root, or +home, or +swap |
+| 8  | User Account | Hostname, username, password |
+| 9  | Base Install | `debootstrap` + kernel + firmware |
 | 10 | HermitOS Stack | Hyprland, Incus, K3s, Hermetic, Ollama |
-| 11 | Bootloader | GRUB EFI + `os-prober` + `update-initramfs` |
+| 11 | Shore Register | Register prime tile in Shore dashboard |
+| 12 | Bootloader | GRUB EFI + `os-prober` + `update-initramfs` |
 | +  | Nvidia | Auto-detect; install proprietary driver if wanted |
 | ✓  | Complete | Unmount + reboot |
+
+## Shore Dynamic Prime Registration
+
+Shore is the HermitOS SOC/watchdog dashboard. It displays a **tile grid** — one tile per
+registered Hermetic prime running on the box.
+
+### Registration Contract
+
+The installer writes `/etc/hermetic/primes.d/<prime-name>.json`:
+
+```json
+{
+  "name": "nova",
+  "display": "Nova",
+  "port": 7777,
+  "dashboard_url": "http://localhost:7777",
+  "health_url": "http://localhost:7777/status",
+  "service": "nova.service",
+  "shore_url": "http://localhost:7778",
+  "registered_at": "2026-01-01T00:00:00Z",
+  "installer_version": "1.0.0"
+}
+```
+
+### Shore Tile Behavior
+
+Shore reads all `.json` files in `/etc/hermetic/primes.d/` and renders one tile per entry.
+
+Health polling (every 30s):
+- `green`  — `GET health_url` returns HTTP 200
+- `yellow` — non-200 or slow response (>3s)
+- `red`    — connection refused / `systemctl is-active <service>` = inactive
+
+Dynamic registration (at runtime):
+- `POST http://localhost:7778/api/primes/register` with the same JSON schema
+- New prime starts → sends registration → new tile appears instantly
+- Prime stops → tile turns gray (Shore retries health checks for 60s then marks dead)
+
+### Directory Watch (alternative)
+Shore can also watch `/etc/hermetic/primes.d/` via inotify and pick up new files
+without requiring a REST call. Both mechanisms are supported.
 
 ## What Gets Installed
 

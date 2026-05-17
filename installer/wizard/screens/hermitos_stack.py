@@ -566,7 +566,7 @@ class HermitOSStackScreen(Screen):
             "\n[bold green]✓ HermitOS stack installation complete![/bold green]"
         )
         btn = self.query_one("#btn_next", Button)
-        btn.label = "Continue to Bootloader →"
+        btn.label = "Continue → Shore Registration"
         btn.disabled = False
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -574,7 +574,7 @@ class HermitOSStackScreen(Screen):
             self.app.go_back()
         elif event.button.id == "btn_next":
             if self._stack_done:
-                self.app.go_next("bootloader")
+                self.app.go_next("shore_register")
                 return
 
             # Save selections to state
