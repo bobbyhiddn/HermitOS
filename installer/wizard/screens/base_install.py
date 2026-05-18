@@ -174,7 +174,7 @@ def install_base_packages(log_cb) -> tuple[bool, str]:
         # Locale & time
         "locales",
         "tzdata",
-        "ntp",
+        "ntpsec",
     ]
 
     log_cb("Updating apt package index...")
@@ -364,6 +364,7 @@ class BaseInstallScreen(Screen):
         btn = self.query_one("#btn_next", Button)
         btn.label = "Continue to HermitOS Stack →"
         btn.disabled = False
+        btn.focus()
 
     def _on_install_failed(self, msg: str) -> None:
         log = self.query_one("#install_log", RichLog)
