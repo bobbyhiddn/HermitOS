@@ -51,8 +51,8 @@ class WelcomeScreen(Screen):
                 yield Label("Estimated time: 20–45 minutes (depends on internet speed)", classes="muted")
 
         with Horizontal(classes="button-bar"):
-            yield Button("Exit Installer", variant="default", id="btn_exit", classes="secondary")
             yield Button("Begin Installation →", variant="success", id="btn_next", classes="primary")
+            yield Button("Exit Installer", variant="default", id="btn_exit", classes="secondary")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn_next":

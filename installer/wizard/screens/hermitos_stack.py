@@ -510,7 +510,10 @@ class HermitOSStackScreen(Screen):
         self.query_one("#install_area").display = False
 
     def _log(self, msg: str) -> None:
-        self.call_from_thread(self._append_log, msg)
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._append_log, msg)
 
     def _append_log(self, msg: str) -> None:
         self.query_one("#stack_log", RichLog).write(msg)
@@ -519,6 +522,10 @@ class HermitOSStackScreen(Screen):
     def run_stack_install(self, install_hyprland_: bool, install_incus_: bool,
                           install_k3s_: bool, install_hermetic_: bool,
                           install_ollama_: bool, install_devtools_: bool) -> None:
+        app = self.app
+        if app is None:
+            return
+        state = app.state
 
         self._log("[bold cyan]Starting HermitOS stack installation...[/bold cyan]\n")
 
@@ -530,8 +537,8 @@ class HermitOSStackScreen(Screen):
         if install_k3s_:
             steps.append(("K3s Kubernetes", install_k3s_script))
         if install_hermetic_:
-            prime = self.app.state.get("prime_name", "prime")
-            username = self.app.state.get("username", "hermit")
+            prime = state.get("prime_name", "prime")
+            username = state.get("username", "hermit")
             steps.append(("Hermetic agent platform",
                            lambda log_cb: install_hermetic_platform(prime, username, log_cb)))
         if install_ollama_:
@@ -553,12 +560,12 @@ class HermitOSStackScreen(Screen):
         # Always add user to groups
         self._log("\n[bold cyan]▶ Configuring user groups...[/bold cyan]")
         try:
-            add_user_to_groups(self.app.state, self._log)
+            add_user_to_groups(state, self._log)
         except Exception as e:
             self._log(f"[yellow]⚠ Group config warning: {e}[/yellow]")
 
-        self.app.state["stack_done"] = True
-        self.call_from_thread(self._on_stack_done)
+        state["stack_done"] = True
+        app.call_from_thread(self._on_stack_done)
 
     def _on_stack_done(self) -> None:
         self._stack_done = True

@@ -126,9 +126,12 @@ class DriveScreen(Screen):
 
     @work(exclusive=True, thread=True)
     def load_drives(self) -> None:
+        app = self.app
+        if app is None:
+            return
         devices = get_block_devices()
         self._devices = devices
-        self.call_from_thread(self._populate_table, devices)
+        app.call_from_thread(self._populate_table, devices)
 
     def _populate_table(self, devices: list[dict]) -> None:
         table = self.query_one("#drive_table", DataTable)

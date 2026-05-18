@@ -32,4 +32,5 @@ lb config noauto \
     --debootstrap-options "--include=apt-transport-https,ca-certificates" \
     --chroot-filesystem squashfs \
     --compression gzip \
+    --bootappend-live "boot=live components username=hermit-installer quiet splash" \
     "${@}"

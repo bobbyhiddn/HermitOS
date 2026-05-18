@@ -185,7 +185,10 @@ class BootloaderScreen(Screen):
         self.query_one("#grub_log").display = False
 
     def _log(self, msg: str) -> None:
-        self.call_from_thread(self._append_log, msg)
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._append_log, msg)
 
     def _append_log(self, msg: str) -> None:
         if msg:
@@ -193,8 +196,13 @@ class BootloaderScreen(Screen):
 
     @work(exclusive=True, thread=True)
     def run_bootloader_install(self) -> None:
+        app = self.app
+        if app is None:
+            return
+        state = app.state
+
         steps = [
-            ("GRUB EFI installation", lambda: install_grub(self.app.state, self._log)),
+            ("GRUB EFI installation", lambda: install_grub(state, self._log)),
             ("initramfs regeneration", lambda: update_initramfs(self._log)),
         ]
 
@@ -206,15 +214,15 @@ class BootloaderScreen(Screen):
                     self._log(f"[green]✓ {msg}[/green]")
                 else:
                     self._log(f"[bold red]✗ Failed: {msg}[/bold red]")
-                    self.call_from_thread(self._on_failed, msg)
+                    app.call_from_thread(self._on_failed, msg)
                     return
             except Exception as e:
                 self._log(f"[bold red]✗ Exception: {e}[/bold red]")
-                self.call_from_thread(self._on_failed, str(e))
+                app.call_from_thread(self._on_failed, str(e))
                 return
 
-        self.app.state["grub_done"] = True
-        self.call_from_thread(self._on_success)
+        app.state["grub_done"] = True
+        app.call_from_thread(self._on_success)
 
     def _on_success(self) -> None:
         self._done = True

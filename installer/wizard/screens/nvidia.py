@@ -188,15 +188,21 @@ class NvidiaScreen(Screen):
 
     @work(exclusive=True, thread=True)
     def run_nvidia_install(self) -> None:
+        app = self.app
+        if app is None:
+            return
         ok, msg = install_nvidia_driver(self._log)
-        self.app.state["install_nvidia"] = ok
+        app.state["install_nvidia"] = ok
         if ok:
-            self.call_from_thread(self._on_success, msg)
+            app.call_from_thread(self._on_success, msg)
         else:
-            self.call_from_thread(self._on_failed, msg)
+            app.call_from_thread(self._on_failed, msg)
 
     def _log(self, msg: str) -> None:
-        self.call_from_thread(self._append_log, msg)
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._append_log, msg)
 
     def _append_log(self, msg: str) -> None:
         if msg:

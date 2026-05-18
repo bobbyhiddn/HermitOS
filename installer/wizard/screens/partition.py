@@ -184,27 +184,33 @@ class PartitionScreen(Screen):
     @work(exclusive=True, thread=True)
     def run_partitioning(self, dev_path: str, scheme: str, swap_mb: int) -> None:
         """Background: execute partitioning."""
-        self.call_from_thread(self._update_log, "Starting partitioning... please wait.")
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._update_log, "Starting partitioning... please wait.")
 
         ok, msg = do_partition(dev_path, scheme, swap_mb)
 
         if ok:
-            # Store partition paths in state
+            # Store partition paths in state (via main thread)
             is_nvme = "nvme" in dev_path
             p = "p" if is_nvme else ""
-            self.app.state["efi_partition"] = f"{dev_path}{p}1"
-            part_num = 2
-            if scheme == "swap" and swap_mb > 0:
-                part_num = 3
-            self.app.state["root_partition"] = f"{dev_path}{p}{part_num}"
-            if scheme == "home":
-                self.app.state["home_partition"] = f"{dev_path}{p}{part_num + 1}"
-            if scheme == "swap":
-                self.app.state["swap_size_mb"] = swap_mb
 
-            self.call_from_thread(self._on_partition_success, msg)
+            def _save_partition_state():
+                self.app.state["efi_partition"] = f"{dev_path}{p}1"
+                part_num = 2
+                if scheme == "swap" and swap_mb > 0:
+                    part_num = 3
+                self.app.state["root_partition"] = f"{dev_path}{p}{part_num}"
+                if scheme == "home":
+                    self.app.state["home_partition"] = f"{dev_path}{p}{part_num + 1}"
+                if scheme == "swap":
+                    self.app.state["swap_size_mb"] = swap_mb
+
+            app.call_from_thread(_save_partition_state)
+            app.call_from_thread(self._on_partition_success, msg)
         else:
-            self.call_from_thread(self._on_partition_error, msg)
+            app.call_from_thread(self._on_partition_error, msg)
 
     def _update_log(self, msg: str) -> None:
         self.query_one("#progress_log", Static).update(msg)

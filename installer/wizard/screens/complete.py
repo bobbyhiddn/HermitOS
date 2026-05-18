@@ -92,7 +92,10 @@ class CompleteScreen(Screen):
         self.query_one("#unmount_log").display = False
 
     def _log(self, msg: str) -> None:
-        self.call_from_thread(self._append_log, msg)
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._append_log, msg)
 
     def _append_log(self, msg: str) -> None:
         self.query_one("#unmount_log", RichLog).write(msg)

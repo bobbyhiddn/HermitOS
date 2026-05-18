@@ -310,7 +310,10 @@ class BaseInstallScreen(Screen):
 
     def _log(self, msg: str) -> None:
         """Thread-safe log update."""
-        self.call_from_thread(self._append_log, msg)
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._append_log, msg)
 
     def _append_log(self, msg: str) -> None:
         log = self.query_one("#install_log", RichLog)
@@ -318,7 +321,10 @@ class BaseInstallScreen(Screen):
 
     @work(exclusive=True, thread=True)
     def run_installation(self) -> None:
-        state = self.app.state
+        app = self.app
+        if app is None:
+            return
+        state = app.state
 
         steps = [
             ("Mounting partitions", lambda: mount_partitions(state)),
@@ -338,18 +344,18 @@ class BaseInstallScreen(Screen):
                     ok, msg = result
                     if not ok:
                         self._log(f"[bold red]✗ Failed: {msg}[/bold red]")
-                        self.call_from_thread(self._on_install_failed, msg)
+                        app.call_from_thread(self._on_install_failed, msg)
                         return
                     self._log(f"[green]✓ {msg}[/green]")
                 else:
                     self._log(f"[green]✓ Done[/green]")
             except Exception as e:
                 self._log(f"[bold red]✗ Exception: {e}[/bold red]")
-                self.call_from_thread(self._on_install_failed, str(e))
+                app.call_from_thread(self._on_install_failed, str(e))
                 return
 
-        self.app.state["debootstrap_done"] = True
-        self.call_from_thread(self._on_install_success)
+        app.state["debootstrap_done"] = True
+        app.call_from_thread(self._on_install_success)
 
     def _on_install_success(self) -> None:
         self._install_done = True

@@ -138,51 +138,57 @@ class NetworkScreen(Screen):
     def detect_network(self) -> None:
         """Background: detect network state."""
         worker = get_current_worker()
+        app = self.app
+        if app is None:
+            return
 
-        self.call_from_thread(self._set_status, "Checking ethernet connectivity...")
+        app.call_from_thread(self._set_status, "Checking ethernet connectivity...")
 
         connected, iface = check_ethernet_dhcp()
         if connected:
             has_internet = ping_check()
             if has_internet:
-                self.call_from_thread(self._set_mode_ethernet_ok, iface)
+                app.call_from_thread(self._set_mode_ethernet_ok, iface)
                 return
 
-        self.call_from_thread(self._set_status, "Scanning interfaces...")
+        app.call_from_thread(self._set_status, "Scanning interfaces...")
         interfaces = get_interfaces()
         self._interfaces = interfaces
 
         wifi_ifaces = [i for i in interfaces if i["wifi"]]
         if wifi_ifaces:
             self._wifi_iface = wifi_ifaces[0]["name"]
-            self.call_from_thread(self._set_mode_wifi_needed)
+            app.call_from_thread(self._set_mode_wifi_needed)
         else:
-            self.call_from_thread(self._set_mode_no_wifi)
+            app.call_from_thread(self._set_mode_no_wifi)
 
     @work(exclusive=True, thread=True)
     def scan_wifi(self) -> None:
         """Background: scan for SSIDs."""
-        self.call_from_thread(self._set_status, f"Scanning for WiFi networks on {self._wifi_iface}...")
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._set_status, f"Scanning for WiFi networks on {self._wifi_iface}...")
         ssids = scan_wifi_ssids()
         self._ssids = ssids
-        self.call_from_thread(self._update_ssid_list, ssids)
+        app.call_from_thread(self._update_ssid_list, ssids)
 
     @work(exclusive=True, thread=True)
     def do_wifi_connect(self, ssid: str, password: str) -> None:
         """Background: connect to WiFi."""
-        self.call_from_thread(self._set_status, f"Connecting to '{ssid}'...")
+        app = self.app
+        if app is None:
+            return
+        app.call_from_thread(self._set_status, f"Connecting to '{ssid}'...")
         ok, msg = connect_wifi(self._wifi_iface, ssid, password)
         if ok:
             has_internet = ping_check()
             if has_internet:
-                self.app.state["network_connected"] = True
-                self.app.state["network_interface"] = self._wifi_iface
-                self.app.state["network_type"] = "wifi"
-                self.call_from_thread(self._set_mode_connected, self._wifi_iface, "WiFi")
+                app.call_from_thread(self._set_mode_connected, self._wifi_iface, "WiFi")
             else:
-                self.call_from_thread(self._show_wifi_error, "Connected but no internet — check your network.")
+                app.call_from_thread(self._show_wifi_error, "Connected but no internet — check your network.")
         else:
-            self.call_from_thread(self._show_wifi_error, f"Failed: {msg}")
+            app.call_from_thread(self._show_wifi_error, f"Failed: {msg}")
 
     # --- UI update helpers (called from thread) ---
 
@@ -231,6 +237,9 @@ class NetworkScreen(Screen):
         self.query_one("#loader").display = False
         self.query_one("#wifi_controls").display = False
         self.query_one("#btn_connect_wifi").display = False
+        self.app.state["network_connected"] = True
+        self.app.state["network_interface"] = iface
+        self.app.state["network_type"] = conn_type.lower()
         self.query_one("#status_label", Static).update(
             f"✓ Connected via {conn_type} on {iface} — internet access confirmed."
         )
