@@ -43,9 +43,8 @@ def chroot_stream(cmd: list[str], log_cb, env_extra: dict = None):
 def install_desktop(log_cb) -> tuple[bool, str]:
     """Install KDE Plasma 6 Wayland desktop environment (NVIDIA-friendly)."""
     packages = [
-        # KDE Plasma 6 core
+        # KDE Plasma 6 core (plasma-workspace-wayland merged into plasma-workspace)
         "kde-plasma-desktop",
-        "plasma-workspace-wayland",
         "sddm",
         # Essential KDE apps
         "konsole",
@@ -59,13 +58,11 @@ def install_desktop(log_cb) -> tuple[bool, str]:
         # Portal for Wayland integration
         "xdg-desktop-portal-kde",
         # Screenshot / clipboard
-        "spectacle",
+        "kde-spectacle",
         "wl-clipboard",
         # Fonts
         "fonts-noto",
         "fonts-noto-color-emoji",
-        # NVIDIA Wayland support
-        "egl-wayland",
     ]
     log_cb("Installing KDE Plasma 6 Wayland desktop...")
     rc = chroot_stream(

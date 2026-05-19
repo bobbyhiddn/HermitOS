@@ -43,9 +43,8 @@ def chroot_stream(cmd: list[str], log_cb, env_extra: dict = None):
 def install_desktop(log_cb) -> tuple[bool, str]:
     """Install KDE Plasma 6 Wayland desktop environment (NVIDIA-friendly)."""
     packages = [
-        # KDE Plasma 6 core
+        # KDE Plasma 6 core (plasma-workspace-wayland merged into plasma-workspace)
         "kde-plasma-desktop",
-        "plasma-workspace-wayland",
         "sddm",
         # Essential KDE apps
         "konsole",
@@ -59,13 +58,12 @@ def install_desktop(log_cb) -> tuple[bool, str]:
         # Portal for Wayland integration
         "xdg-desktop-portal-kde",
         # Screenshot / clipboard
-        "spectacle",
+        "kde-spectacle",
         "wl-clipboard",
         # Fonts
         "fonts-noto",
         "fonts-noto-color-emoji",
         # NVIDIA Wayland support
-        "egl-wayland",
     ]
     log_cb("Installing KDE Plasma 6 Wayland desktop...")
     rc = chroot_stream(
@@ -324,9 +322,8 @@ def install_hermetic_platform(prime_name: str, username: str, log_cb) -> tuple[b
 
     hermetic_source = "https://github.com/bobbyhiddn/Hermetic.git"
     log_cb(f"Cloning Hermetic from {hermetic_source}...")
-    r = subprocess.run(
-        ["git", "clone", "--depth=1", hermetic_source, hermetic_dir],
-        capture_output=True, text=True, timeout=120
+    r = chroot_run(
+        ["git", "clone", "--depth=1", hermetic_source, "/opt/hermetic"],
     )
     if r.returncode != 0:
         log_cb(f"Could not clone Hermetic (may not be public yet): {r.stderr}")
