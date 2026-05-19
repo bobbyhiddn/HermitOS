@@ -271,16 +271,40 @@ def create_user(state: dict, log_cb) -> None:
     username = state.get("username", "hermit")
     password = state.get("password", "hermit")
 
+    # Build group list from groups that actually exist in the chroot
+    desired_groups = ["sudo", "audio", "video", "plugdev", "netdev", "bluetooth"]
+    existing_groups = []
+    for g in desired_groups:
+        r = chroot_run(["getent", "group", g])
+        if r.returncode == 0:
+            existing_groups.append(g)
+        else:
+            log_cb(f"  Group '{g}' not found — skipping (will add later if created)")
+
     log_cb(f"Creating user: {username}")
-    chroot_run(["useradd", "-m", "-s", "/bin/bash",
-                "-G", "sudo,audio,video,plugdev,netdev,bluetooth",
-                username])
+    useradd_cmd = ["useradd", "-m", "-s", "/bin/bash"]
+    if existing_groups:
+        useradd_cmd += ["-G", ",".join(existing_groups)]
+    useradd_cmd.append(username)
+
+    r = chroot_run(useradd_cmd)
+    if r.returncode != 0:
+        log_cb(f"[bold red]  useradd failed (rc={r.returncode}): {r.stderr.strip()}[/bold red]")
+        raise RuntimeError(f"useradd failed: {r.stderr.strip()}")
+    log_cb(f"  User '{username}' created successfully.")
+
+    # Use chpasswd for reliable non-interactive password setting
+    log_cb(f"Setting password for {username}...")
     proc = subprocess.Popen(
-        ["chroot", MOUNT_POINT, "passwd", username],
+        ["chroot", MOUNT_POINT, "chpasswd"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
     )
-    proc.communicate(input=f"{password}\n{password}\n")
+    _, stderr = proc.communicate(input=f"{username}:{password}\n")
+    if proc.returncode != 0:
+        log_cb(f"[bold red]  chpasswd failed (rc={proc.returncode}): {stderr.strip()}[/bold red]")
+        raise RuntimeError(f"chpasswd failed: {stderr.strip()}")
+    log_cb(f"  Password set successfully.")
 
     log_cb(f"Configuring sudo for {username}...")
     with open(f"{MOUNT_POINT}/etc/sudoers.d/{username}", "w") as f:
