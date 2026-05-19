@@ -87,7 +87,8 @@ def scan_wifi_ssids() -> list[str]:
 def connect_wifi(iface: str, ssid: str, password: str) -> tuple[bool, str]:
     """Connect to a WiFi network via nmcli."""
     rc, out, err = run_cmd(
-        ["nmcli", "dev", "wifi", "connect", ssid, "password", password, "ifname", iface],
+        ["nmcli", "dev", "wifi", "connect", ssid, "password", password,
+         "ifname", iface, "wifi-sec.key-mgmt", "wpa-psk"],
         timeout=30
     )
     if rc == 0:
@@ -229,7 +230,7 @@ class NetworkScreen(Screen):
         )
         detail = self.query_one("#detail_area", Static)
         detail.update(
-            "Plug in an ethernet cable and click Refresh, or ensure your WiFi adapter is supported."
+            "Plug in an ethernet cable and select Refresh, or ensure your WiFi adapter is supported."
         )
         detail.add_class("warning-box")
 
@@ -244,7 +245,7 @@ class NetworkScreen(Screen):
             f"✓ Connected via {conn_type} on {iface} — internet access confirmed."
         )
         detail = self.query_one("#detail_area", Static)
-        detail.update("Network is ready. Click Next to continue.")
+        detail.update("Network is ready. Select Next to continue.")
         detail.add_class("success-box")
 
     def _update_ssid_list(self, ssids: list[str]) -> None:
