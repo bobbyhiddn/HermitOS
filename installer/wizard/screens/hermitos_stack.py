@@ -40,42 +40,44 @@ def chroot_stream(cmd: list[str], log_cb, env_extra: dict = None):
     return proc.returncode
 
 
-def install_sway(log_cb) -> tuple[bool, str]:
-    """Install Sway desktop environment."""
+def install_desktop(log_cb) -> tuple[bool, str]:
+    """Install KDE Plasma 6 Wayland desktop environment (NVIDIA-friendly)."""
     packages = [
-        "sway",
-        "swaybar",
-        "swayidle",
-        "swaylock",
-        "swaybg",
-        "waybar",
-        "wofi",
-        "foot",
-        "grim",
-        "slurp",
-        "wl-clipboard",
-        "xdg-desktop-portal-wlr",
-        "xdg-desktop-portal-gtk",
+        # KDE Plasma 6 core
+        "kde-plasma-desktop",
+        "plasma-workspace-wayland",
+        "sddm",
+        # Essential KDE apps
+        "konsole",
+        "dolphin",
+        "firefox-esr",
+        # Audio
         "pipewire",
         "pipewire-pulse",
         "wireplumber",
         "pavucontrol",
-        "thunar",
-        "firefox-esr",
-        "mako-notifier",
-        "brightnessctl",
-        "playerctl",
-        "polkit-gnome",
+        # Portal for Wayland integration
+        "xdg-desktop-portal-kde",
+        # Screenshot / clipboard
+        "spectacle",
+        "wl-clipboard",
+        # Fonts
         "fonts-noto",
         "fonts-noto-color-emoji",
+        # NVIDIA Wayland support
+        "egl-wayland",
     ]
-    log_cb("Installing Sway desktop environment...")
+    log_cb("Installing KDE Plasma 6 Wayland desktop...")
     rc = chroot_stream(
-        ["apt-get", "install", "-y", "--no-install-recommends"] + packages,
+        ["apt-get", "install", "-y"] + packages,
         log_cb
     )
     if rc != 0:
-        return False, "Sway installation failed."
+        return False, "KDE Plasma installation failed."
+
+    # Enable SDDM display manager
+    chroot_run(["systemctl", "enable", "sddm"])
+    log_cb("SDDM display manager enabled.")
 
     # Install default wallpaper
     wallpaper_dir = f"{MOUNT_POINT}/usr/share/backgrounds/hermitos"
@@ -89,102 +91,56 @@ def install_sway(log_cb) -> tuple[bool, str]:
         shutil.copy2(wallpaper_src, f"{wallpaper_dir}/default-wallpaper.png")
         log_cb("Installed default wallpaper.")
 
-    # Write a minimal Sway config
-    sway_cfg_dir = f"{MOUNT_POINT}/etc/skel/.config/sway"
-    os.makedirs(sway_cfg_dir, exist_ok=True)
-    with open(f"{sway_cfg_dir}/config", "w") as f:
-        f.write("""# HermitOS Sway Configuration
-set $mod Mod4
+    # Configure KDE to use the hermit wallpaper by default
+    # plasma-org.kde.plasma.desktop-appletsrc sets the wallpaper plugin config
+    plasma_cfg_dir = f"{MOUNT_POINT}/etc/skel/.config"
+    os.makedirs(plasma_cfg_dir, exist_ok=True)
+    with open(f"{plasma_cfg_dir}/plasma-org.kde.plasma.desktop-appletsrc", "w") as f:
+        f.write("""[Containments][1]
+activityId=
+formfactor=0
+immutability=1
+lastScreen=0
+location=0
+plugin=org.kde.desktopcontainment
+wallpaperplugin=org.kde.image
 
-# Output (monitor) configuration
-output * bg /usr/share/backgrounds/hermitos/default-wallpaper.png fill #0d1117
-
-# Autostart
-exec waybar
-exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
-exec mako
-
-# Input configuration
-input type:keyboard {
-    xkb_layout us
-}
-input type:touchpad {
-    tap enabled
-    natural_scroll enabled
-}
-
-# Appearance
-default_border pixel 2
-gaps inner 5
-gaps outer 10
-client.focused #58a6ff #58a6ff #0d1117 #58a6ff #58a6ff
-client.unfocused #21262d #21262d #8b949e #21262d #21262d
-
-# Key bindings — basics
-bindsym $mod+Return exec foot
-bindsym $mod+q kill
-bindsym $mod+Shift+e exec swaymsg exit
-bindsym $mod+e exec thunar
-bindsym $mod+space exec wofi --show drun
-bindsym $mod+f fullscreen toggle
-bindsym $mod+Shift+space floating toggle
-
-# Focus movement
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
-
-# Move windows
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
-bindsym $mod+Shift+Right move right
-
-# Workspaces
-bindsym $mod+1 workspace number 1
-bindsym $mod+2 workspace number 2
-bindsym $mod+3 workspace number 3
-bindsym $mod+4 workspace number 4
-bindsym $mod+5 workspace number 5
-
-bindsym $mod+Shift+1 move container to workspace number 1
-bindsym $mod+Shift+2 move container to workspace number 2
-bindsym $mod+Shift+3 move container to workspace number 3
-bindsym $mod+Shift+4 move container to workspace number 4
-bindsym $mod+Shift+5 move container to workspace number 5
-
-# Layout
-bindsym $mod+b splith
-bindsym $mod+v splitv
-
-# Resize mode
-mode "resize" {
-    bindsym Left resize shrink width 10px
-    bindsym Down resize grow height 10px
-    bindsym Up resize shrink height 10px
-    bindsym Right resize grow width 10px
-    bindsym Escape mode "default"
-}
-bindsym $mod+r mode "resize"
-
-# Volume keys
-bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
-bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
-bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
-
-# Screenshot
-bindsym Print exec grim -g "$(slurp)" - | wl-copy
-
-# Idle / lock
-exec swayidle -w \\
-    timeout 300 'swaylock -f -c 0d1117' \\
-    timeout 600 'swaymsg "output * power off"' \\
-    resume 'swaymsg "output * power on"'
+[Containments][1][Wallpaper][org.kde.image][General]
+Image=file:///usr/share/backgrounds/hermitos/default-wallpaper.png
+FillMode=1
 """)
 
-    log_cb("Sway configured.")
-    return True, "Sway installed."
+    # Configure SDDM to use Wayland session by default
+    sddm_conf_dir = f"{MOUNT_POINT}/etc/sddm.conf.d"
+    os.makedirs(sddm_conf_dir, exist_ok=True)
+    with open(f"{sddm_conf_dir}/hermit.conf", "w") as f:
+        f.write("""[General]
+DisplayServer=wayland
+
+[Wayland]
+SessionDir=/usr/share/wayland-sessions
+
+[Theme]
+Current=breeze
+""")
+
+    # NVIDIA Wayland environment variables (critical for proprietary drivers)
+    with open(f"{MOUNT_POINT}/etc/profile.d/nvidia-wayland.sh", "w") as f:
+        f.write("""# HermitOS — NVIDIA Wayland compatibility
+# These ensure KDE Plasma Wayland works properly with proprietary NVIDIA drivers
+export __GL_GSYNC_ALLOWED=1
+export __GL_VRR_ALLOWED=1
+export GBM_BACKEND=nvidia-drm
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+""")
+
+    # Ensure nvidia-drm modeset is enabled (required for Wayland)
+    modeset_conf = f"{MOUNT_POINT}/etc/modprobe.d/nvidia-wayland.conf"
+    with open(modeset_conf, "w") as f:
+        f.write("options nvidia-drm modeset=1\n")
+
+    log_cb("KDE Plasma 6 Wayland configured with NVIDIA support.")
+    return True, "KDE Plasma 6 desktop installed."
 
 
 def install_incus(log_cb) -> tuple[bool, str]:
@@ -463,7 +419,7 @@ class HermitOSStackScreen(Screen):
                     yield Static("")
 
                     with Container(classes="info-box"):
-                        yield Label("  Sway              Wayland compositor + Waybar + Wofi + Foot terminal", classes="bold")
+                        yield Label("  KDE Plasma 6      Wayland desktop + Konsole + Dolphin (NVIDIA-ready)", classes="bold")
 
                     with Container(classes="info-box"):
                         yield Label("  Incus             LXC/LXD-compatible hypervisor for VMs & containers", classes="bold")
@@ -518,7 +474,7 @@ class HermitOSStackScreen(Screen):
 
         steps = []
         if install_sway_:
-            steps.append(("Sway desktop", install_sway))
+            steps.append(("KDE Plasma 6 desktop", install_desktop))
         if install_incus_:
             steps.append(("Incus hypervisor", install_incus))
         if install_k3s_:
@@ -534,7 +490,7 @@ class HermitOSStackScreen(Screen):
             steps.append(("uv + Go toolchain", install_uv_go))
 
         # Critical steps that must succeed (no desktop = unusable system)
-        critical_steps = {"Sway desktop"}
+        critical_steps = {"KDE Plasma 6 desktop"}
 
         for name, fn in steps:
             self._log(f"\n[bold cyan]▶ Installing: {name}[/bold cyan]")

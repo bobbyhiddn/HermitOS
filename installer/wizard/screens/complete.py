@@ -59,7 +59,7 @@ class CompleteScreen(Screen):
                     yield Label("What was installed:", classes="bold")
                     prime = state.get("prime_name_display", "")
                     if state.get("install_sway"):
-                        yield Label("  ✓ Sway desktop (Wayland)")
+                        yield Label("  ✓ KDE Plasma 6 desktop (Wayland)")
                     if state.get("install_incus"):
                         yield Label("  ✓ Incus hypervisor (VMs & containers)")
                     if state.get("install_k3s"):
