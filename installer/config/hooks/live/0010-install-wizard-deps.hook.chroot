@@ -11,6 +11,7 @@ apt-get install -y python3-pip --no-install-recommends 2>/dev/null || true
 
 # Install textual and rich into the system Python
 # We use --break-system-packages here because this IS the system we're building
-pip3 install --no-cache-dir --break-system-packages textual rich 2>&1
+# Pin textual to avoid breaking API changes across major versions
+pip3 install --no-cache-dir --break-system-packages 'textual>=7.0,<9.0' rich 2>&1
 
 echo "[HermitOS] Wizard deps installed OK"

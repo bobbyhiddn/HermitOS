@@ -121,10 +121,9 @@ class DriveScreen(Screen):
 
     def on_mount(self) -> None:
         table = self.query_one("#drive_table", DataTable)
+        table.cursor_type = "row"
         table.add_columns("Device", "Size", "Interface", "Model")
         self.load_drives()
-        # Focus the table so arrow keys work immediately
-        table.focus()
 
     @work(exclusive=True, thread=True)
     def load_drives(self) -> None:
@@ -158,11 +157,17 @@ class DriveScreen(Screen):
         self.query_one("#selection_status", Static).update(
             "Use ↑/↓ to highlight a drive, Enter to select it, then press 'Select Drive'."
         )
-        # Re-focus table AFTER rows are populated so cursor keys work
-        table.focus()
-        # Move cursor to first row so it's visibly highlighted
+        # Defer focus until after Textual completes its layout refresh —
+        # focusing an async-populated DataTable immediately doesn't activate
+        # the keyboard handler reliably.
         if devices:
             table.move_cursor(row=0)
+        self.call_after_refresh(self._focus_table)
+
+    def _focus_table(self) -> None:
+        """Focus the drive table after layout refresh so keyboard input works."""
+        table = self.query_one("#drive_table", DataTable)
+        table.focus()
 
     def _show_drive_detail(self, dev_path: str) -> None:
         """Show partition detail for the given drive path."""

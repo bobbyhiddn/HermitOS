@@ -14,7 +14,7 @@ Built with Textual. Must run as root.
   7.  Partitioning
   8.  User Account
   9.  Base System Install (debootstrap)
-  10. HermitOS Stack (Hyprland, Incus, K3s, Hermetic, Ollama)
+  10. HermitOS Stack (Sway, Incus, K3s, Hermetic, Ollama)
   11. Shore Registration (prime tile in Shore dashboard)
   12. Bootloader (GRUB EFI)
   (+) Nvidia Detection (auto, after bootloader)
@@ -229,6 +229,7 @@ class HermitInstaller(App):
         background: #0d1117;
         border: solid #30363d;
         margin: 1 0;
+        height: 12;
     }
 
     DataTable > .datatable--header {
@@ -291,7 +292,7 @@ class HermitInstaller(App):
             # Stack selection
             "install_k3s": True,
             "install_incus": True,
-            "install_hyprland": True,
+            "install_sway": True,
             "install_hermetic": True,
             "install_ollama": False,
             "install_nvidia": False,

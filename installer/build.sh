@@ -116,6 +116,12 @@ run_build() {
     log "Changing to build directory: $BUILD_DIR"
     cd "$BUILD_DIR"
 
+    # Purge ALL cached layers (including chroot) so includes.chroot is re-applied.
+    # Plain "lb clean" keeps the chroot cache — overlay changes get silently skipped.
+    log "Purging previous build (lb clean --purge)..."
+    lb clean --purge 2>/dev/null || true
+    ok "Purge complete — full rebuild will run."
+
     # Run lb config
     log "Running: lb config..."
     bash auto/config

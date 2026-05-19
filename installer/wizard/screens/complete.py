@@ -58,8 +58,8 @@ class CompleteScreen(Screen):
                     yield Label("")
                     yield Label("What was installed:", classes="bold")
                     prime = state.get("prime_name_display", "")
-                    if state.get("install_hyprland"):
-                        yield Label("  ✓ Hyprland desktop (Wayland)")
+                    if state.get("install_sway"):
+                        yield Label("  ✓ Sway desktop (Wayland)")
                     if state.get("install_incus"):
                         yield Label("  ✓ Incus hypervisor (VMs & containers)")
                     if state.get("install_k3s"):
@@ -75,10 +75,10 @@ class CompleteScreen(Screen):
                 yield Static("")
                 with Container(classes="warning-box"):
                     yield Label("⚠  Next steps:", classes="bold")
-                    yield Label("  1. Click 'Unmount & Reboot' below")
+                    yield Label("  1. Select 'Unmount & Reboot' below")
                     yield Label("  2. Remove this USB drive when system shuts down")
                     yield Label("  3. Boot into HermitOS from your drive")
-                    yield Label(f"  4. Log in as '{username}' — Hyprland starts automatically")
+                    yield Label(f"  4. Log in as '{username}' — Sway starts automatically")
                     yield Label("  5. Open a terminal (Super+Enter) to begin configuration")
 
                 yield Static("")

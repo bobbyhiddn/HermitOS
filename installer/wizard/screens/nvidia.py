@@ -153,7 +153,7 @@ class NvidiaScreen(Screen):
                         yield Label("• Nouveau (open source) works for basic display but not full performance")
                         yield Label("• Proprietary driver needed for: CUDA, AI workloads, Ollama GPU mode")
                         yield Label("• You can install later with: sudo apt install nvidia-driver")
-                        yield Label("• Hyprland works with both drivers")
+                        yield Label("• Sway works with both drivers")
 
                 yield RichLog(id="nvidia_log", highlight=True, markup=True, max_lines=200)
 

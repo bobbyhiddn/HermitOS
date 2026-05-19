@@ -175,6 +175,26 @@ class PartitionScreen(Screen):
     def on_mount(self) -> None:
         self.query_one("#swap_config").display = False
         self.query_one("#progress_area").display = False
+        # Idempotency: if partitioning was already completed, show success state
+        if self.app.state.get("root_partition"):
+            self._partitioned = True
+            self.query_one("#config_area").display = False
+            self.query_one("#progress_area").display = True
+            target = self.app.state.get("target_drive", "?")
+            efi = self.app.state.get("efi_partition", "?")
+            root = self.app.state.get("root_partition", "?")
+            log = self.query_one("#progress_log", Static)
+            log.update(
+                f"✓ Partitioning already complete!\n\n"
+                f"Drive: {target}\n"
+                f"EFI:   {efi}\n"
+                f"Root:  {root}"
+            )
+            log.remove_class("info-box")
+            log.add_class("success-box")
+            btn = self.query_one("#btn_next", Button)
+            btn.label = "Continue →"
+            btn.focus()
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id == "scheme_select":
@@ -220,7 +240,10 @@ class PartitionScreen(Screen):
         log.update(f"✓ Partitioning complete!\n\n{msg}")
         log.remove_class("info-box")
         log.add_class("success-box")
-        self.query_one("#btn_next", Button).label = "Continue →"
+        btn = self.query_one("#btn_next", Button)
+        btn.label = "Continue →"
+        btn.disabled = False
+        btn.focus()
         self._partitioned = True
 
     def _on_partition_error(self, msg: str) -> None:

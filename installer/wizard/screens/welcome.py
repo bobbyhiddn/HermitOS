@@ -30,7 +30,7 @@ class WelcomeScreen(Screen):
                     yield Label("")
                     yield Label(
                         "HermitOS is a self-hosted computing platform built on Debian 13 (Trixie). "
-                        "It combines a Wayland desktop (Hyprland), container orchestration (K3s + Incus), "
+                        "It combines a Wayland desktop (Sway), container orchestration (K3s + Incus), "
                         "and an AI agent layer (Hermetic) into a single cohesive system."
                     )
                     yield Label("")

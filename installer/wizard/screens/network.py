@@ -88,7 +88,7 @@ def connect_wifi(iface: str, ssid: str, password: str) -> tuple[bool, str]:
     """Connect to a WiFi network via nmcli."""
     rc, out, err = run_cmd(
         ["nmcli", "dev", "wifi", "connect", ssid, "password", password,
-         "ifname", iface, "wifi-sec.key-mgmt", "wpa-psk"],
+         "ifname", iface],
         timeout=30
     )
     if rc == 0:

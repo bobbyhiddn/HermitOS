@@ -40,17 +40,21 @@ def chroot_stream(cmd: list[str], log_cb, env_extra: dict = None):
     return proc.returncode
 
 
-def install_hyprland(log_cb) -> tuple[bool, str]:
-    """Install Hyprland desktop environment."""
+def install_sway(log_cb) -> tuple[bool, str]:
+    """Install Sway desktop environment."""
     packages = [
-        "hyprland",
+        "sway",
+        "swaybar",
+        "swayidle",
+        "swaylock",
+        "swaybg",
         "waybar",
         "wofi",
         "foot",
         "grim",
         "slurp",
         "wl-clipboard",
-        "xdg-desktop-portal-hyprland",
+        "xdg-desktop-portal-wlr",
         "xdg-desktop-portal-gtk",
         "pipewire",
         "pipewire-pulse",
@@ -58,8 +62,6 @@ def install_hyprland(log_cb) -> tuple[bool, str]:
         "pavucontrol",
         "thunar",
         "firefox-esr",
-        "swaybg",
-        "swaylock",
         "mako-notifier",
         "brightnessctl",
         "playerctl",
@@ -67,107 +69,122 @@ def install_hyprland(log_cb) -> tuple[bool, str]:
         "fonts-noto",
         "fonts-noto-color-emoji",
     ]
-    log_cb("Installing Hyprland desktop environment...")
+    log_cb("Installing Sway desktop environment...")
     rc = chroot_stream(
         ["apt-get", "install", "-y", "--no-install-recommends"] + packages,
         log_cb
     )
     if rc != 0:
-        return False, "Hyprland installation failed."
+        return False, "Sway installation failed."
 
-    # Write a minimal Hyprland config
-    hypr_cfg_dir = f"{MOUNT_POINT}/etc/skel/.config/hypr"
-    os.makedirs(hypr_cfg_dir, exist_ok=True)
-    with open(f"{hypr_cfg_dir}/hyprland.conf", "w") as f:
-        f.write("""# HermitOS Hyprland Configuration
-monitor=,preferred,auto,1
+    # Install default wallpaper
+    wallpaper_dir = f"{MOUNT_POINT}/usr/share/backgrounds/hermitos"
+    os.makedirs(wallpaper_dir, exist_ok=True)
+    wallpaper_src = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "assets", "wallpapers", "default-wallpaper.png"
+    )
+    if os.path.exists(wallpaper_src):
+        import shutil
+        shutil.copy2(wallpaper_src, f"{wallpaper_dir}/default-wallpaper.png")
+        log_cb("Installed default wallpaper.")
 
-exec-once=waybar
-exec-once=swaybg -c "#0d1117"
-exec-once=/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+    # Write a minimal Sway config
+    sway_cfg_dir = f"{MOUNT_POINT}/etc/skel/.config/sway"
+    os.makedirs(sway_cfg_dir, exist_ok=True)
+    with open(f"{sway_cfg_dir}/config", "w") as f:
+        f.write("""# HermitOS Sway Configuration
+set $mod Mod4
 
-input {
-    kb_layout = us
-    follow_mouse = 1
-    touchpad {
-        natural_scroll = yes
-    }
-    sensitivity = 0
+# Output (monitor) configuration
+output * bg /usr/share/backgrounds/hermitos/default-wallpaper.png fill #0d1117
+
+# Autostart
+exec waybar
+exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+exec mako
+
+# Input configuration
+input type:keyboard {
+    xkb_layout us
+}
+input type:touchpad {
+    tap enabled
+    natural_scroll enabled
 }
 
-general {
-    gaps_in = 5
-    gaps_out = 10
-    border_size = 2
-    col.active_border = rgba(58a6ffee)
-    col.inactive_border = rgba(21262dee)
-    layout = dwindle
+# Appearance
+default_border pixel 2
+gaps inner 5
+gaps outer 10
+client.focused #58a6ff #58a6ff #0d1117 #58a6ff #58a6ff
+client.unfocused #21262d #21262d #8b949e #21262d #21262d
+
+# Key bindings — basics
+bindsym $mod+Return exec foot
+bindsym $mod+q kill
+bindsym $mod+Shift+e exec swaymsg exit
+bindsym $mod+e exec thunar
+bindsym $mod+space exec wofi --show drun
+bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+space floating toggle
+
+# Focus movement
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# Move windows
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# Workspaces
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+
+# Layout
+bindsym $mod+b splith
+bindsym $mod+v splitv
+
+# Resize mode
+mode "resize" {
+    bindsym Left resize shrink width 10px
+    bindsym Down resize grow height 10px
+    bindsym Up resize shrink height 10px
+    bindsym Right resize grow width 10px
+    bindsym Escape mode "default"
 }
-
-decoration {
-    rounding = 8
-    blur {
-        enabled = true
-        size = 6
-        passes = 3
-    }
-    drop_shadow = yes
-    shadow_range = 10
-    shadow_render_power = 3
-    col.shadow = rgba(1a1a1aee)
-}
-
-animations {
-    enabled = yes
-    bezier = easeOut, 0.05, 0.9, 0.1, 1.05
-    animation = windows, 1, 5, easeOut
-    animation = fade, 1, 7, default
-    animation = workspaces, 1, 6, default
-}
-
-dwindle {
-    pseudotile = yes
-    preserve_split = yes
-}
-
-# Key bindings
-$mainMod = SUPER
-bind = $mainMod, Return, exec, foot
-bind = $mainMod, Q, killactive,
-bind = $mainMod, M, exit,
-bind = $mainMod, E, exec, thunar
-bind = $mainMod, Space, exec, wofi --show drun
-bind = $mainMod, F, fullscreen
-bind = $mainMod SHIFT, Space, togglefloating
-
-# Workspace binds
-bind = $mainMod, 1, workspace, 1
-bind = $mainMod, 2, workspace, 2
-bind = $mainMod, 3, workspace, 3
-bind = $mainMod, 4, workspace, 4
-bind = $mainMod, 5, workspace, 5
-
-bind = $mainMod SHIFT, 1, movetoworkspace, 1
-bind = $mainMod SHIFT, 2, movetoworkspace, 2
-bind = $mainMod SHIFT, 3, movetoworkspace, 3
-bind = $mainMod SHIFT, 4, movetoworkspace, 4
-bind = $mainMod SHIFT, 5, movetoworkspace, 5
-
-# Scroll through workspaces
-bind = $mainMod, mouse_down, workspace, e+1
-bind = $mainMod, mouse_up, workspace, e-1
+bindsym $mod+r mode "resize"
 
 # Volume keys
-binde = , XF86AudioRaiseVolume, exec, pactl set-sink-volume @DEFAULT_SINK@ +5%
-binde = , XF86AudioLowerVolume, exec, pactl set-sink-volume @DEFAULT_SINK@ -5%
-bind = , XF86AudioMute, exec, pactl set-sink-mute @DEFAULT_SINK@ toggle
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
 
 # Screenshot
-bind = , Print, exec, grim -g "$(slurp)" - | wl-copy
+bindsym Print exec grim -g "$(slurp)" - | wl-copy
+
+# Idle / lock
+exec swayidle -w \\
+    timeout 300 'swaylock -f -c 0d1117' \\
+    timeout 600 'swaymsg "output * power off"' \\
+    resume 'swaymsg "output * power on"'
 """)
 
-    log_cb("Hyprland configured.")
-    return True, "Hyprland installed."
+    log_cb("Sway configured.")
+    return True, "Sway installed."
 
 
 def install_incus(log_cb) -> tuple[bool, str]:
@@ -446,7 +463,7 @@ class HermitOSStackScreen(Screen):
                     yield Static("")
 
                     with Container(classes="info-box"):
-                        yield Label("  Hyprland          Wayland compositor + Waybar + Wofi + Foot terminal", classes="bold")
+                        yield Label("  Sway              Wayland compositor + Waybar + Wofi + Foot terminal", classes="bold")
 
                     with Container(classes="info-box"):
                         yield Label("  Incus             LXC/LXD-compatible hypervisor for VMs & containers", classes="bold")
@@ -489,7 +506,7 @@ class HermitOSStackScreen(Screen):
         self.query_one("#stack_log", RichLog).write(msg)
 
     @work(exclusive=True, thread=True)
-    def run_stack_install(self, install_hyprland_: bool, install_incus_: bool,
+    def run_stack_install(self, install_sway_: bool, install_incus_: bool,
                           install_k3s_: bool, install_hermetic_: bool,
                           install_ollama_: bool, install_devtools_: bool) -> None:
         app = self.app
@@ -500,8 +517,8 @@ class HermitOSStackScreen(Screen):
         self._log("[bold cyan]Starting HermitOS stack installation...[/bold cyan]\n")
 
         steps = []
-        if install_hyprland_:
-            steps.append(("Hyprland desktop", install_hyprland))
+        if install_sway_:
+            steps.append(("Sway desktop", install_sway))
         if install_incus_:
             steps.append(("Incus hypervisor", install_incus))
         if install_k3s_:
@@ -517,7 +534,7 @@ class HermitOSStackScreen(Screen):
             steps.append(("uv + Go toolchain", install_uv_go))
 
         # Critical steps that must succeed (no desktop = unusable system)
-        critical_steps = {"Hyprland desktop"}
+        critical_steps = {"Sway desktop"}
 
         for name, fn in steps:
             self._log(f"\n[bold cyan]▶ Installing: {name}[/bold cyan]")
@@ -578,13 +595,13 @@ class HermitOSStackScreen(Screen):
                 return
 
             # Core components are always installed
-            self.app.state["install_hyprland"] = True
+            self.app.state["install_sway"] = True
             self.app.state["install_incus"] = True
             self.app.state["install_k3s"] = True
             self.app.state["install_nvidia"] = False  # set in nvidia screen
             self.app.state["install_hermetic"] = True
 
-            install_hyprland_ = True
+            install_sway_ = True
             install_incus_ = True
             install_k3s_ = True
             install_hermetic_ = True
@@ -598,6 +615,6 @@ class HermitOSStackScreen(Screen):
             self.query_one("#btn_next", Button).label = "Installing..."
 
             self.run_stack_install(
-                install_hyprland_, install_incus_,
+                install_sway_, install_incus_,
                 install_k3s_, install_hermetic_, install_ollama_, install_devtools_
             )
