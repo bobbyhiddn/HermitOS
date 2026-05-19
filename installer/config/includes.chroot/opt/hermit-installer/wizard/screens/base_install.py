@@ -162,6 +162,7 @@ def install_base_packages(log_cb) -> tuple[bool, str]:
         "htop",
         "rsync",
         "unzip",
+        "zstd",
         "lsof",
         "pciutils",
         "usbutils",

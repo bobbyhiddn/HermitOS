@@ -324,9 +324,8 @@ def install_hermetic_platform(prime_name: str, username: str, log_cb) -> tuple[b
 
     hermetic_source = "https://github.com/bobbyhiddn/Hermetic.git"
     log_cb(f"Cloning Hermetic from {hermetic_source}...")
-    r = subprocess.run(
-        ["git", "clone", "--depth=1", hermetic_source, hermetic_dir],
-        capture_output=True, text=True, timeout=120
+    r = chroot_run(
+        ["git", "clone", "--depth=1", hermetic_source, "/opt/hermetic"],
     )
     if r.returncode != 0:
         log_cb(f"Could not clone Hermetic (may not be public yet): {r.stderr}")
