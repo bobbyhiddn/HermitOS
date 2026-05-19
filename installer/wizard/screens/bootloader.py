@@ -55,6 +55,9 @@ def install_grub(state: dict, log_cb) -> tuple[bool, str]:
     log_cb(f"Installing GRUB EFI to {target_drive} (EFI: {efi_partition})")
 
     # Install GRUB inside chroot
+    # --removable: installs to /EFI/BOOT/BOOTX64.EFI so UEFI firmware
+    # auto-discovers HermitOS without relying on NVRAM boot entries
+    # (critical for USB installs and cross-machine portability)
     rc = chroot_stream(
         [
             "grub-install",
@@ -63,6 +66,8 @@ def install_grub(state: dict, log_cb) -> tuple[bool, str]:
             "--bootloader-id=HermitOS",
             "--recheck",
             "--no-floppy",
+            "--removable",
+            target_drive,
         ],
         log_cb
     )
@@ -232,6 +237,7 @@ class BootloaderScreen(Screen):
         btn = self.query_one("#btn_next", Button)
         btn.label = "Continue →"
         btn.disabled = False
+        btn.focus()
 
     def _on_failed(self, msg: str) -> None:
         btn = self.query_one("#btn_next", Button)

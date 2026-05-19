@@ -71,7 +71,6 @@ def install_nvidia_driver(log_cb) -> tuple[bool, str]:
         "nvidia-kernel-support",
         "nvidia-modprobe",
         "libglx-nvidia0",
-        "libgl1-nvidia-glx",
     ]
 
     proc = subprocess.Popen(
@@ -214,6 +213,7 @@ class NvidiaScreen(Screen):
         btn = self.query_one("#btn_next", Button)
         btn.label = "Finish →"
         btn.disabled = False
+        btn.focus()
 
     def _on_failed(self, msg: str) -> None:
         self._done = True
