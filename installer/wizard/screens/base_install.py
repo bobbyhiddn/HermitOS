@@ -95,18 +95,32 @@ deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-f
         f.write("Package: *\nPin: release n=trixie\nPin-Priority: 900\n")
 
 
-def bind_mount_filesystems(log_cb) -> None:
-    """Bind-mount /proc, /sys, /dev for chroot operations."""
+def bind_mount_filesystems(log_cb) -> tuple[bool, str]:
+    """Bind-mount /proc, /sys, /dev for chroot operations.
+
+    Returns (False, error_msg) if any critical filesystem fails to mount —
+    subsequent chroot commands (locale-gen, systemctl, dpkg-reconfigure) will
+    silently break if these are missing, so we fail fast here.
+    """
     log_cb("Mounting virtual filesystems...")
-    for fs, target in [
-        ("proc", f"{MOUNT_POINT}/proc"),
-        ("sysfs", f"{MOUNT_POINT}/sys"),
-        ("devtmpfs", f"{MOUNT_POINT}/dev"),
-        ("devpts", f"{MOUNT_POINT}/dev/pts"),
-        ("tmpfs", f"{MOUNT_POINT}/run"),
-    ]:
+    mounts = [
+        ("proc",     "proc",    f"{MOUNT_POINT}/proc"),
+        ("sysfs",    "sysfs",   f"{MOUNT_POINT}/sys"),
+        ("devtmpfs", "devtmpfs",f"{MOUNT_POINT}/dev"),
+        ("devpts",   "devpts",  f"{MOUNT_POINT}/dev/pts"),
+        ("tmpfs",    "tmpfs",   f"{MOUNT_POINT}/run"),
+    ]
+    for fs, fstype, target in mounts:
         os.makedirs(target, exist_ok=True)
-        run(["mount", "-t", fs, fs, target])
+        r = run(["mount", "-t", fstype, fs, target])
+        if r.returncode != 0:
+            # Already mounted is fine (returncode 32 on Linux); anything else is fatal.
+            if "already mounted" in (r.stderr or "").lower():
+                log_cb(f"  {target} already mounted — skipping.")
+                continue
+            return False, f"Failed to mount {fstype} on {target}: {r.stderr.strip()}"
+        log_cb(f"  Mounted {fstype} → {target}")
+    return True, "Virtual filesystems mounted."
 
 
 def chroot_run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -264,7 +278,7 @@ def create_user(state: dict, log_cb) -> None:
     proc = subprocess.Popen(
         ["chroot", MOUNT_POINT, "passwd", username],
         stdin=subprocess.PIPE,
-        capture_output=True, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
     )
     proc.communicate(input=f"{password}\n{password}\n")
 
@@ -330,7 +344,7 @@ class BaseInstallScreen(Screen):
             ("Mounting partitions", lambda: mount_partitions(state)),
             ("Running debootstrap", lambda: run_debootstrap(self._log)),
             ("Configuring apt sources", lambda: (configure_apt(state, self._log), (True, "OK"))[1]),
-            ("Binding virtual filesystems", lambda: (bind_mount_filesystems(self._log), (True, "OK"))[1]),
+            ("Binding virtual filesystems", lambda: bind_mount_filesystems(self._log)),
             ("Installing base packages", lambda: install_base_packages(self._log)),
             ("Configuring system (hostname, locale, fstab)", lambda: (configure_system(state, self._log), (True, "OK"))[1]),
             ("Creating user account", lambda: (create_user(state, self._log), (True, "OK"))[1]),
