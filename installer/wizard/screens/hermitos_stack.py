@@ -319,7 +319,7 @@ def install_hermetic_platform(prime_name: str, username: str, log_cb) -> tuple[b
     hermetic_dir = f"{MOUNT_POINT}/opt/hermetic"
     os.makedirs(hermetic_dir, exist_ok=True)
 
-    hermetic_source = "https://github.com/bobbyhiddn/Hermetic.git"
+    hermetic_source = "https://github.com/ologos-repos/Hermetic.git"
     log_cb(f"Cloning Hermetic from {hermetic_source}...")
     r = chroot_run(
         ["git", "clone", "--depth=1", hermetic_source, "/opt/hermetic"],
